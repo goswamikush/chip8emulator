@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 // RAM
 uint8_t chip8ram[4096];
@@ -48,6 +49,30 @@ int initialize_values() {
 
     // Display
     memset(display, 0, sizeof(display));
+
+    return 0;
+}
+
+int load_rom(char *filepath) {
+    FILE *fptr;
+
+    fptr = fopen(filepath, "rb");
+
+    if (fptr == NULL) {
+        printf("Error opening file. Exiting program.\n");
+        return 1;
+    };
+
+    // Get file size
+    fseek(fptr, 0, SEEK_END);
+
+    long file_size = ftell(fptr);
+
+    fseek(fptr, 0, SEEK_SET);
+
+    size_t bytes_read = fread(chip8ram + 0x200, 1, file_size, fptr);
+
+    fclose(fptr);
 
     return 0;
 }
