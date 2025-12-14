@@ -18,3 +18,6 @@ uint16_t stack[16];
 
 // I register
 uint16_t I;
+
+// Display
+uint8_t display[32][64];
