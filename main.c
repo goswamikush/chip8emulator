@@ -89,14 +89,22 @@ void loop() {
         pc += 2;
 
         // Decode instruction into separate nibbles
-        uint16_t decoded_inst[4];
+        uint16_t nibbles[4];
 
-        decoded_inst[0] = opcode >> 12;
-        decoded_inst[1] = opcode >> 8 & 0xF;
-        decoded_inst[2] = opcode >> 4 & 0xF;
-        decoded_inst[3] = opcode & 0xF;
+        nibbles[0] = opcode >> 12;
+        nibbles[1] = opcode >> 8 & 0xF;
+        nibbles[2] = opcode >> 4 & 0xF;
+        nibbles[3] = opcode & 0xF;
 
-        uint16_t second_byte = (decoded_inst[2] << 4) | decoded_inst[3];
-        uint16_t last_nibbles = (decoded_inst[1] << 8) | (decoded_inst[2] << 4) | decoded_inst[3];
+        uint16_t second_byte = (nibbles[2] << 4) | nibbles[3];
+        uint16_t last_nibbles = (nibbles[1] << 8) | (nibbles[2] << 4) | nibbles[3];
+
+        if (nibbles[0] == 0 && nibbles[1] == 0) {
+            if (second_byte == 0xE0) {
+                memset(display, 0, sizeof(display)); 
+                break;
+            };
+            break;
+        };
     };
 }
