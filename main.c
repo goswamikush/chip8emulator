@@ -88,7 +88,15 @@ void loop() {
         // Increment pc to be ready to fetch next opcode
         pc += 2;
 
-        // Decode instruction
-        uint16_t nibble = opcode >> 8;
+        // Decode instruction into separate nibbles
+        uint16_t decoded_inst[4];
+
+        decoded_inst[0] = opcode >> 12;
+        decoded_inst[1] = opcode >> 8 & 0xF;
+        decoded_inst[2] = opcode >> 4 & 0xF;
+        decoded_inst[3] = opcode & 0xF;
+
+        uint16_t second_byte = (decoded_inst[2] << 4) | decoded_inst[3];
+        uint16_t last_nibbles = (decoded_inst[1] << 8) | (decoded_inst[2] << 4) | decoded_inst[3];
     };
 }
