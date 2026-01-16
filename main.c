@@ -116,6 +116,13 @@ void loop() {
         if (nibbles[0] == 6) {
             uint16_t gp_index = nibbles[1];
             gp_registers[gp_index] = second_byte;
-        }
+        };
+
+        // Add
+        if (nibbles[0] == 7) {
+            uint16_t gp_index = nibbles[1];
+
+            gp_registers[gp_index] += second_byte;
+        };
     };
 }
