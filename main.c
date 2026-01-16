@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 // RAM
 uint8_t chip8ram[4096];
@@ -75,4 +76,19 @@ int load_rom(char *filepath) {
     fclose(fptr);
 
     return 0;
+}
+
+void loop() {
+    bool is_running = true;
+
+    while (is_running) {
+        // Fetch next instruction
+        uint16_t opcode = (chip8ram[pc] << 8) | chip8ram[pc + 1];
+
+        // Increment pc to be ready to fetch next opcode
+        pc += 2;
+
+        // Decode instruction
+        uint16_t nibble = opcode >> 8;
+    };
 }
