@@ -106,5 +106,10 @@ void loop() {
             };
             break;
         };
+
+        // Jump instruction
+        if (nibbles[0] == 1) {
+            pc = last_nibbles;
+        };
     };
 }
