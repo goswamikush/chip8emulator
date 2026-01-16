@@ -125,5 +125,10 @@ void loop() {
 
             gp_registers[gp_index] += second_byte;
         };
+
+        // Set index
+        if (nibbles[0] == 0xA) {
+            I = last_nibbles;
+        };
     };
 }
