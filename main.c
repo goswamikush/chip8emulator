@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 // RAM
 uint8_t chip8ram[4096];
@@ -26,6 +27,8 @@ uint16_t I;
 
 // Display
 uint8_t display[32][64];
+
+void display_test();
 
 int initialize_values() {
     // RAM from 0 to 4095
@@ -80,8 +83,8 @@ int load_rom(char *filepath) {
 
 void loop() {
     bool is_running = true;
-
-    while (is_running) {
+    int count = 0;
+    while (is_running && count < 50) {
         // Fetch next instruction
         uint16_t opcode = (chip8ram[pc] << 8) | chip8ram[pc + 1];
 
@@ -102,9 +105,7 @@ void loop() {
         if (nibbles[0] == 0 && nibbles[1] == 0) {
             if (second_byte == 0xE0) {
                 memset(display, 0, sizeof(display)); 
-                break;
             };
-            break;
         };
 
         // Jump
@@ -130,5 +131,79 @@ void loop() {
         if (nibbles[0] == 0xA) {
             I = last_nibbles;
         };
+
+        // Display
+        if (nibbles[0] == 0xD) {
+            uint16_t sprite_height = nibbles[3];
+
+            uint16_t start_x = gp_registers[nibbles[1]] % 64;
+            uint16_t start_y = gp_registers[nibbles[2]] % 32;
+
+            bool collision_detected = false;
+
+            int y;
+            for (y = 0; y < sprite_height; y++) {
+                uint8_t sprite_row = chip8ram[I + y];
+                
+                int x;
+                for (x = 0; x < 8; x++) {
+                    uint8_t curr_x = (start_x + x);
+                    uint8_t curr_y = (start_y + y);
+
+                    if (curr_x >= 64) {
+                        continue;
+                    }
+
+                    if (curr_y >= 32) {
+                        continue;
+                    }
+
+                    uint8_t curr_val = display[curr_y][curr_x];
+
+                    display[curr_y][curr_x] = display[curr_y][curr_x] ^ ((sprite_row >> (7 - x)) & 0x1);
+
+                    uint8_t new_val = display[curr_y][curr_x];
+
+                    if (curr_val == 1 && new_val == 0) {
+                        collision_detected = true;
+                    }
+                }
+            };
+
+            if (collision_detected) {
+                gp_registers[0xF] = 1;
+            } else {
+                gp_registers[0xF] = 0;
+            };
+        };
+
+        display_test();
+        usleep(100000);
+        count++;
     };
+}
+
+void display_test() {
+    int y;
+    int x;
+
+    for (y = 0; y < 32; y++) {
+        for (x = 0; x < 64; x++) {
+            uint8_t curr_pixel = display[y][x];
+
+            if (curr_pixel == 1) {
+                printf("X");
+            } else {
+                printf(".");
+            };
+        };
+        printf("\n");
+    };
+};
+
+int main() {
+    initialize_values();
+    load_rom("ibm_logo.ch8");
+    loop();
+    return 0;
 }
