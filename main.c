@@ -587,12 +587,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // printf("First 10 bytes of ROM:\n");
-    // for(int i = 0; i < 10; i++) {
-    //     printf("%02X ", chip8ram[0x200 + i]);
-    // }
-    // printf("\n");
-    
     loop();
     
     sdl_close();
