@@ -109,7 +109,7 @@ int load_rom(char *filepath) {
 
     if (fptr == NULL) {
         printf("Error opening file. Exiting program.\n");
-        return 1;
+        return 0;
     };
 
     // Get file size
@@ -123,7 +123,7 @@ int load_rom(char *filepath) {
 
     fclose(fptr);
 
-    return 0;
+    return 1;
 }
 
 void loop() {
@@ -566,7 +566,13 @@ void sdl_close() {
     SDL_Quit();
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <rom_file>\n", argv[0]);
+        printf("Example: %s invaders.ch8\n", argv[0]);
+        return 1;
+    }
+
     if (!sdl_init()) {
         printf("Failed to initialize SDL!\n");
         return 1;
@@ -574,13 +580,18 @@ int main() {
 
     srand(time(NULL));
     initialize_values();
-    load_rom("invaders.ch8"); 
-
-    printf("First 10 bytes of ROM:\n");
-    for(int i = 0; i < 10; i++) {
-        printf("%02X ", chip8ram[0x200 + i]);
+    
+    if (!load_rom(argv[1])) {
+        printf("Failed to load ROM: %s\n", argv[1]);
+        sdl_close();
+        return 1;
     }
-    printf("\n");
+
+    // printf("First 10 bytes of ROM:\n");
+    // for(int i = 0; i < 10; i++) {
+    //     printf("%02X ", chip8ram[0x200 + i]);
+    // }
+    // printf("\n");
     
     loop();
     
@@ -589,3 +600,4 @@ int main() {
 }
 
 // gcc main.c -o chip8 -I/opt/homebrew/include -L/opt/homebrew/lib -lSDL2
+
