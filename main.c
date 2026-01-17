@@ -312,6 +312,22 @@ void loop() {
                 pc += 2;
             };
         };
+        
+        // Arithmetic
+        if (nibbles[0] == 8) {
+            uint8_t last_nibble = nibbles[3];
+
+            uint8_t x = nibbles[1];
+            uint8_t y = nibbles[2];
+
+            // Set
+            switch (last_nibble) {
+                case 0:
+                    gp_registers[x] = gp_registers[y];
+                    break;
+            }
+        };
+
         // display_test();
         // usleep(100000);
         // count++;
