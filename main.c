@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <time.h>
+#include <stdlib.h>
 
 // RAM
 uint8_t chip8ram[4096];
@@ -116,7 +118,7 @@ int load_rom(char *filepath) {
 void loop() {
     bool is_running = true;
     int count = 0;
-    while (is_running && count < 50) {
+    while (is_running && count < 1000) {
         // Fetch next instruction
         uint16_t opcode = (chip8ram[pc] << 8) | chip8ram[pc + 1];
 
@@ -334,7 +336,7 @@ void loop() {
                 case 3:
                     gp_registers[x] = gp_registers[x] ^ gp_registers[y];
                     break;
-                case 4:
+                case 4: {
                     uint16_t result = gp_registers[x] + gp_registers[y];
                     if (result > 255) {
                         gp_registers[0xF] = 1;
@@ -343,6 +345,7 @@ void loop() {
                     }
                     gp_registers[x] = result;
                     break;
+                }
                 case 5:
                     if (gp_registers[x] >= gp_registers[y]) {
                         gp_registers[0xF] = 1;
@@ -361,20 +364,22 @@ void loop() {
 
                     gp_registers[x] = gp_registers[y] - gp_registers[x];
                     break;                    
-                case 6:
+                case 6: {
                     uint8_t last_bit_right = gp_registers[x] & 0x1;
 
                     gp_registers[x] = gp_registers[x] >> 1;
 
                     gp_registers[0xF] = last_bit_right;
                     break;
-                case 0xE:
+                }
+                case 0xE: {
                     uint8_t last_bit_left = gp_registers[x] >> 7;
 
                     gp_registers[x] = gp_registers[x] << 1;
                     
                     gp_registers[0xF] = last_bit_left;
                     break;                
+                }
             }
         };
         
@@ -383,9 +388,15 @@ void loop() {
             pc = last_nibbles + gp_registers[0];
         };
 
-        // display_test();
+        // Random
+        if (nibbles[0] == 0xC) {
+            uint8_t random_number = rand();
+            gp_registers[nibbles[1]] = random_number & second_byte;
+        };
+
+        display_test();
         // usleep(100000);
-        // count++;
+        count++;
     };
 }
 
@@ -408,8 +419,9 @@ void display_test() {
 };
 
 int main() {
+    srand(time(NULL));
     initialize_values();
-    load_rom("ibm_logo.ch8");
+    load_rom("test_opcode.ch8");
     loop();
     return 0;
 }
