@@ -377,6 +377,11 @@ void loop() {
                     break;                
             }
         };
+        
+        // Jump with offset
+        if (nibbles[0] == 0xB) {
+            pc = last_nibbles + gp_registers[0];
+        };
 
         // display_test();
         // usleep(100000);
