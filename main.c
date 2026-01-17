@@ -134,11 +134,15 @@ void loop() {
         uint16_t second_byte = (nibbles[2] << 4) | nibbles[3];
         uint16_t last_nibbles = (nibbles[1] << 8) | (nibbles[2] << 4) | nibbles[3];
 
-        // Clear screen
+        // Clear screen and subroutine
         if (nibbles[0] == 0 && nibbles[1] == 0) {
             if (second_byte == 0xE0) {
                 memset(display, 0, sizeof(display)); 
-            };
+            } else if (second_byte == 0xEE) {
+                sp--;
+                uint16_t return_addr = stack[sp];
+                pc = return_addr;
+            }
         };
 
         // Jump
@@ -275,6 +279,13 @@ void loop() {
             } else if (second_byte == 0x29) {
                 I = 0x050 + 5 * (*reg & 0xF);
             }
+        };
+
+        // Call subroutine
+        if (nibbles[0] == 2) {
+            stack[sp] = pc;
+            sp++;
+            pc = last_nibbles;
         };
 
         // display_test();
