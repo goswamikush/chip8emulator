@@ -7,6 +7,13 @@
 #include <stdlib.h>
 #include <SDL2/SDL.h>
 
+// SDL constants
+SDL_Window* gWindow = NULL;
+SDL_Surface* gScreenSurface = NULL;
+SDL_Renderer* gRenderer = NULL; 
+const int SCREEN_WIDTH = 640;
+const int SCREEN_HEIGHT = 320;
+
 // RAM
 uint8_t chip8ram[4096];
 
@@ -54,7 +61,10 @@ uint8_t font[80] = {
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-void display_test();
+// SDL functions
+void render_display();  
+bool sdl_init();        
+void sdl_close();
 
 int initialize_values() {
     // RAM from 0 to 4095
@@ -119,7 +129,15 @@ int load_rom(char *filepath) {
 void loop() {
     bool is_running = true;
     int count = 0;
-    while (is_running && count < 1000) {
+    SDL_Event e;
+
+    while (is_running) {
+
+        while(SDL_PollEvent(&e)) {
+            if(e.type == SDL_QUIT) {
+                is_running = false;
+            }
+        }
         // Fetch next instruction
         uint16_t opcode = (chip8ram[pc] << 8) | chip8ram[pc + 1];
 
@@ -395,35 +413,91 @@ void loop() {
             gp_registers[nibbles[1]] = random_number & second_byte;
         };
 
-        display_test();
-        // usleep(100000);
-        count++;
+        render_display();
+        SDL_Delay(16);
     };
 }
 
-void display_test() {
-    int y;
-    int x;
+bool sdl_init() {
+    bool success = true;
 
-    for (y = 0; y < 32; y++) {
-        for (x = 0; x < 64; x++) {
-            uint8_t curr_pixel = display[y][x];
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+        success = false;
+    }
+    else {
+        gWindow = SDL_CreateWindow("CHIP-8 Emulator", 
+                                   SDL_WINDOWPOS_UNDEFINED, 
+                                   SDL_WINDOWPOS_UNDEFINED, 
+                                   SCREEN_WIDTH, 
+                                   SCREEN_HEIGHT, 
+                                   SDL_WINDOW_SHOWN);
+        if (gWindow == NULL) {
+            printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
+            success = false;
+        }
+        else {
+            // Create renderer
+            gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED);
+            if (gRenderer == NULL) {
+                printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
+                success = false;
+            }
+        }
+    }
 
-            if (curr_pixel == 1) {
-                printf("X");
-            } else {
-                printf(".");
-            };
-        };
-        printf("\n");
-    };
-};
+    return success;
+}
+
+void render_display() {
+    // Clear screen (black background)
+    SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
+    SDL_RenderClear(gRenderer);
+
+    // Set draw color to white for pixels
+    SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
+
+    // Draw each pixel
+    for (int y = 0; y < 32; y++) {
+        for (int x = 0; x < 64; x++) {
+            if (display[y][x] == 1) {
+                // Each CHIP-8 pixel is 10x10 screen pixels
+                SDL_Rect pixel = {
+                    x * 10,  // x position
+                    y * 10,  // y position
+                    10,      // width
+                    10       // height
+                };
+                SDL_RenderFillRect(gRenderer, &pixel);
+            }
+        }
+    }
+
+    // Update screen
+    SDL_RenderPresent(gRenderer);
+}
+
+void sdl_close() {
+    SDL_DestroyRenderer(gRenderer);
+    SDL_DestroyWindow(gWindow);
+    gRenderer = NULL;
+    gWindow = NULL;
+    SDL_Quit();
+}
 
 int main() {
+    if (!sdl_init()) {
+        printf("Failed to initialize SDL!\n");
+        return 1;
+    }
+
     srand(time(NULL));
     initialize_values();
-    load_rom("test_opcode.ch8");
+    load_rom("test_opcode.ch8");  // or test_opcode.ch8
+    
     loop();
+    
+    sdl_close();
     return 0;
 }
 
