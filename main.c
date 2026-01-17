@@ -343,6 +343,24 @@ void loop() {
                     }
                     gp_registers[x] = result;
                     break;
+                case 5:
+                    if (gp_registers[x] >= gp_registers[y]) {
+                        gp_registers[0xF] = 1;
+                    } else {
+                        gp_registers[0xF] = 0;
+                    }
+
+                    gp_registers[x] = gp_registers[x] - gp_registers[y];
+                    break;
+                case 7:
+                    if (gp_registers[y] >= gp_registers[x]) {
+                        gp_registers[0xF] = 1;
+                    } else {
+                        gp_registers[0xF] = 0;
+                    }
+
+                    gp_registers[x] = gp_registers[y] - gp_registers[x];
+                    break;                    
             }
         };
 
