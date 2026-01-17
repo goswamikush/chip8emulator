@@ -201,6 +201,49 @@ void loop() {
                 } else {
                     gp_registers[0xF] = 0;
                 }
+            } else if (second_byte == 0x33) {
+                uint8_t digits[3];
+                
+                uint8_t val = *reg;
+                int i;
+                for (i = 0; i < 3; i++) {
+                    digits[2 - i] = val % 10;
+                    val = val / 10;
+                };
+                // Place digits in spots
+                int j;
+                for (j = 0; j < 3; j++) {
+                    chip8ram[I + j] = digits[j];
+                };
+            } else if (second_byte == 0x33) {
+                uint8_t digits[3];
+                
+                uint8_t val = *reg;
+                int i;
+                for (i = 0; i < 3; i++) {
+                    uint8_t curr_digit = val % 10;
+                    digits[3 - i] = curr_digit;
+                    val = (val - curr_digit) / 10;
+                };
+                // Place digits in spots
+                int j;
+                for (j = 0; j < 3; j++) {
+                    chip8ram[I + j] = digits[j];
+                };
+            } else if (second_byte == 55) {
+                int i;
+                for (i = 0; i <= nibbles[1]; i++) {
+                    uint8_t curr_gp = gp_registers[i];
+
+                    chip8ram[I + i] = curr_gp;
+                };
+            } else if (second_byte == 0x65) {
+                int i;
+                for (i = 0; i <= nibbles[1]; i++) {
+                    uint8_t curr_val = chip8ram[I + i];
+
+                    gp_registers[i] = curr_val;
+                };
             }
         };
 
