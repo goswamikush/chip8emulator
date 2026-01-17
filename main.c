@@ -288,6 +288,30 @@ void loop() {
             pc = last_nibbles;
         };
 
+        // Skip conditionally
+        if (nibbles[0] == 3) {
+            if (gp_registers[nibbles[1]] == second_byte) {
+                pc += 2;
+            };
+        };
+
+        if (nibbles[0] == 4) {
+            if (gp_registers[nibbles[1]] != second_byte) {
+                pc += 2;
+            };
+        };
+
+        if (nibbles[0] == 5 && nibbles[3] == 0) {
+            if (gp_registers[nibbles[1]] == gp_registers[nibbles[2]]) {
+                pc += 2;
+            };
+        };
+
+        if (nibbles[0] == 9 && nibbles[3] == 0) {
+            if (gp_registers[nibbles[1]] != gp_registers[nibbles[2]]) {
+                pc += 2;
+            };
+        };
         // display_test();
         // usleep(100000);
         // count++;
