@@ -325,6 +325,24 @@ void loop() {
                 case 0:
                     gp_registers[x] = gp_registers[y];
                     break;
+                case 1:
+                    gp_registers[x] = gp_registers[x] | gp_registers[y];
+                    break;
+                case 2:
+                    gp_registers[x] = gp_registers[x] & gp_registers[y];
+                    break;
+                case 3:
+                    gp_registers[x] = gp_registers[x] ^ gp_registers[y];
+                    break;
+                case 4:
+                    uint16_t result = gp_registers[x] + gp_registers[y];
+                    if (result > 255) {
+                        gp_registers[0xF] = 1;
+                    } else {
+                        gp_registers[0xF] = 0;
+                    }
+                    gp_registers[x] = result;
+                    break;
             }
         };
 
