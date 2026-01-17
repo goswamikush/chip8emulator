@@ -131,13 +131,57 @@ void loop() {
     int count = 0;
     SDL_Event e;
 
-    while (is_running) {
+    uint32_t last_timer_update = SDL_GetTicks();
 
+    while (is_running) {
         while(SDL_PollEvent(&e)) {
             if(e.type == SDL_QUIT) {
                 is_running = false;
+            } 
+            else if(e.type == SDL_KEYDOWN) {
+                switch(e.key.keysym.sym) {
+                    case SDLK_1: keypad[0x1] = 1; break;
+                    case SDLK_2: keypad[0x2] = 1; break;
+                    case SDLK_3: keypad[0x3] = 1; break;
+                    case SDLK_4: keypad[0xC] = 1; break;
+                    case SDLK_q: keypad[0x4] = 1; break;
+                    case SDLK_w: keypad[0x5] = 1; break;
+                    case SDLK_e: keypad[0x6] = 1; break;
+                    case SDLK_r: keypad[0xD] = 1; break;
+                    case SDLK_a: keypad[0x7] = 1; break;
+                    case SDLK_s: keypad[0x8] = 1; break;
+                    case SDLK_d: keypad[0x9] = 1; break;
+                    case SDLK_f: keypad[0xE] = 1; break;
+                    case SDLK_z: keypad[0xA] = 1; break;
+                    case SDLK_x: keypad[0x0] = 1; break;
+                    case SDLK_c: keypad[0xB] = 1; break;
+                    case SDLK_v: keypad[0xF] = 1; break;
+                    case SDLK_5: keypad[0x5] = 1; break;  // Add in KEYDOWN
+                    case SDLK_6: keypad[0x6] = 1; break;
+                }
+            }
+            else if(e.type == SDL_KEYUP) {
+                switch(e.key.keysym.sym) {
+                    case SDLK_1: keypad[0x1] = 0; break;
+                    case SDLK_2: keypad[0x2] = 0; break;
+                    case SDLK_3: keypad[0x3] = 0; break;
+                    case SDLK_4: keypad[0xC] = 0; break;
+                    case SDLK_q: keypad[0x4] = 0; break;
+                    case SDLK_w: keypad[0x5] = 0; break;
+                    case SDLK_e: keypad[0x6] = 0; break;
+                    case SDLK_r: keypad[0xD] = 0; break;
+                    case SDLK_a: keypad[0x7] = 0; break;
+                    case SDLK_s: keypad[0x8] = 0; break;
+                    case SDLK_d: keypad[0x9] = 0; break;
+                    case SDLK_f: keypad[0xE] = 0; break;
+                    case SDLK_z: keypad[0xA] = 0; break;
+                    case SDLK_x: keypad[0x0] = 0; break;
+                    case SDLK_c: keypad[0xB] = 0; break;
+                    case SDLK_v: keypad[0xF] = 0; break;
+                }
             }
         }
+
         // Fetch next instruction
         uint16_t opcode = (chip8ram[pc] << 8) | chip8ram[pc + 1];
 
@@ -151,6 +195,8 @@ void loop() {
         nibbles[1] = opcode >> 8 & 0xF;
         nibbles[2] = opcode >> 4 & 0xF;
         nibbles[3] = opcode & 0xF;
+
+        // printf("PC: %04X | Opcode: %04X | First nibble: %X\n", pc - 2, opcode, nibbles[0]);
 
         uint16_t second_byte = (nibbles[2] << 4) | nibbles[3];
         uint16_t last_nibbles = (nibbles[1] << 8) | (nibbles[2] << 4) | nibbles[3];
@@ -299,7 +345,21 @@ void loop() {
                 };
             } else if (second_byte == 0x29) {
                 I = 0x050 + 5 * (*reg & 0xF);
-            }
+            } else if (second_byte == 0x0A) {
+                // Wait for key press
+                bool key_pressed = false;
+                for (int i = 0; i < 16; i++) {
+                    if (keypad[i] == 1) {
+                        *reg = i;
+                        key_pressed = true;
+                        break;
+                    };
+                };
+                // If no key pressed, repeat this instruction
+                if (!key_pressed) {
+                    pc -= 2;
+                };
+            };
         };
 
         // Call subroutine
@@ -413,8 +473,29 @@ void loop() {
             gp_registers[nibbles[1]] = random_number & second_byte;
         };
 
+        // Skip if key
+        if (nibbles[0] == 0xE) {
+            uint8_t x = gp_registers[nibbles[1]];
+            if (second_byte == 0x9E) {
+                if (keypad[x] == 1) {
+                    pc += 2;
+                };
+            } else if (second_byte == 0xA1) {
+                if (keypad[x] == 0) {
+                    pc += 2;
+                };
+            };
+        };
+
         render_display();
-        SDL_Delay(16);
+        SDL_Delay(8);
+
+        uint32_t current_time = SDL_GetTicks();
+        if(current_time - last_timer_update >= 16) {  // ~60Hz (1000ms/60 ≈ 16ms)
+            if(delay_timer > 0) delay_timer--;
+            if(sound_timer > 0) sound_timer--;
+            last_timer_update = current_time;
+        }
     };
 }
 
@@ -493,7 +574,13 @@ int main() {
 
     srand(time(NULL));
     initialize_values();
-    load_rom("test_opcode.ch8");  // or test_opcode.ch8
+    load_rom("invaders.ch8"); 
+
+    printf("First 10 bytes of ROM:\n");
+    for(int i = 0; i < 10; i++) {
+        printf("%02X ", chip8ram[0x200 + i]);
+    }
+    printf("\n");
     
     loop();
     
