@@ -361,6 +361,20 @@ void loop() {
 
                     gp_registers[x] = gp_registers[y] - gp_registers[x];
                     break;                    
+                case 6:
+                    uint8_t last_bit_right = gp_registers[x] & 0x1;
+
+                    gp_registers[x] = gp_registers[x] >> 1;
+
+                    gp_registers[0xF] = last_bit_right;
+                    break;
+                case 0xE:
+                    uint8_t last_bit_left = gp_registers[x] >> 7;
+
+                    gp_registers[x] = gp_registers[x] << 1;
+                    
+                    gp_registers[0xF] = last_bit_left;
+                    break;                
             }
         };
 
