@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdlib.h>
+#include <SDL2/SDL.h>
 
 // RAM
 uint8_t chip8ram[4096];
@@ -425,3 +426,5 @@ int main() {
     loop();
     return 0;
 }
+
+// gcc main.c -o chip8 -I/opt/homebrew/include -L/opt/homebrew/lib -lSDL2
