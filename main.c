@@ -31,6 +31,26 @@ uint8_t display[32][64];
 // Keypad
 uint8_t keypad[16];
 
+// Font
+uint8_t font[80] = {
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+};
+
 void display_test();
 
 int initialize_values() {
@@ -57,7 +77,14 @@ int initialize_values() {
     // Display
     memset(display, 0, sizeof(display));
 
+    // Keypad
     memset(keypad, 0, sizeof(keypad));
+
+    // Font
+    int i ;
+    for (i = 0; i < 80; i++) {
+        chip8ram[i + 0x050] = font[i];
+    };
 
     return 0;
 }
@@ -107,6 +134,7 @@ void loop() {
         uint16_t second_byte = (nibbles[2] << 4) | nibbles[3];
         uint16_t last_nibbles = (nibbles[1] << 8) | (nibbles[2] << 4) | nibbles[3];
 
+        // Clear screen
         if (nibbles[0] == 0 && nibbles[1] == 0) {
             if (second_byte == 0xE0) {
                 memset(display, 0, sizeof(display)); 
@@ -182,7 +210,7 @@ void loop() {
             };
         };
 
-        // Timers and Add to Index
+        // Timers, Add to Index, Font
         if (nibbles[0] == 0xF) {
             uint8_t *reg = &gp_registers[nibbles[1]];
 
@@ -244,6 +272,8 @@ void loop() {
 
                     gp_registers[i] = curr_val;
                 };
+            } else if (second_byte == 0x29) {
+                I = 0x050 + 5 * (*reg & 0xF);
             }
         };
 
