@@ -28,6 +28,9 @@ uint16_t I;
 // Display
 uint8_t display[32][64];
 
+// Keypad
+uint8_t keypad[16];
+
 void display_test();
 
 int initialize_values() {
@@ -53,6 +56,8 @@ int initialize_values() {
 
     // Display
     memset(display, 0, sizeof(display));
+
+    memset(keypad, 0, sizeof(keypad));
 
     return 0;
 }
@@ -177,9 +182,22 @@ void loop() {
             };
         };
 
-        display_test();
-        usleep(100000);
-        count++;
+        // Timers
+        if (nibbles[0] == 0xF) {
+            uint8_t *reg = &gp_registers[nibbles[1]];
+
+            if (second_byte == 0x07) {
+                *reg = delay_timer;
+            } else if (second_byte == 0x15) {
+                delay_timer = *reg;
+            } else if (second_byte == 0x18) {
+                sound_timer = *reg;
+            };
+        };
+
+        // display_test();
+        // usleep(100000);
+        // count++;
     };
 }
 
