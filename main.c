@@ -182,7 +182,7 @@ void loop() {
             };
         };
 
-        // Timers
+        // Timers and Add to Index
         if (nibbles[0] == 0xF) {
             uint8_t *reg = &gp_registers[nibbles[1]];
 
@@ -192,7 +192,16 @@ void loop() {
                 delay_timer = *reg;
             } else if (second_byte == 0x18) {
                 sound_timer = *reg;
-            };
+            } else if (second_byte == 0x1E) {
+                // Add to index
+                I += *reg;
+
+                if (I > 0xFFF) {
+                    gp_registers[0xF] = 1;
+                } else {
+                    gp_registers[0xF] = 0;
+                }
+            }
         };
 
         // display_test();
