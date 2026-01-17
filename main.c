@@ -592,6 +592,3 @@ int main(int argc, char *argv[]) {
     sdl_close();
     return 0;
 }
-
-// gcc main.c -o chip8 -I/opt/homebrew/include -L/opt/homebrew/lib -lSDL2
-
