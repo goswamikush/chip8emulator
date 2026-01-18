@@ -7,10 +7,11 @@
 #include <stdlib.h>
 #include <SDL2/SDL.h>
 
-// SDL constants
+// SDL values
 SDL_Window* gWindow = NULL;
 SDL_Surface* gScreenSurface = NULL;
-SDL_Renderer* gRenderer = NULL; 
+SDL_Renderer* gRenderer = NULL;
+
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 320;
 
@@ -156,8 +157,6 @@ void loop() {
                     case SDLK_x: keypad[0x0] = 1; break;
                     case SDLK_c: keypad[0xB] = 1; break;
                     case SDLK_v: keypad[0xF] = 1; break;
-                    case SDLK_5: keypad[0x5] = 1; break;  // Add in KEYDOWN
-                    case SDLK_6: keypad[0x6] = 1; break;
                 }
             }
             else if(e.type == SDL_KEYUP) {
@@ -190,313 +189,290 @@ void loop() {
 
         // Decode instruction into separate nibbles
         uint16_t nibbles[4];
-
         nibbles[0] = opcode >> 12;
-        nibbles[1] = opcode >> 8 & 0xF;
-        nibbles[2] = opcode >> 4 & 0xF;
+        nibbles[1] = (opcode >> 8) & 0xF;
+        nibbles[2] = (opcode >> 4) & 0xF;
         nibbles[3] = opcode & 0xF;
-
-        // printf("PC: %04X | Opcode: %04X | First nibble: %X\n", pc - 2, opcode, nibbles[0]);
 
         uint16_t second_byte = (nibbles[2] << 4) | nibbles[3];
         uint16_t last_nibbles = (nibbles[1] << 8) | (nibbles[2] << 4) | nibbles[3];
 
-        // Clear screen and subroutine
-        if (nibbles[0] == 0 && nibbles[1] == 0) {
-            if (second_byte == 0xE0) {
-                memset(display, 0, sizeof(display)); 
-            } else if (second_byte == 0xEE) {
-                sp--;
-                uint16_t return_addr = stack[sp];
-                pc = return_addr;
-            }
-        };
-
-        // Jump
-        if (nibbles[0] == 1) {
-            pc = last_nibbles;
-        };
-
-        // Set
-        if (nibbles[0] == 6) {
-            uint16_t gp_index = nibbles[1];
-
-            gp_registers[gp_index] = second_byte;
-        };
-
-        // Add
-        if (nibbles[0] == 7) {
-            uint16_t gp_index = nibbles[1];
-
-            gp_registers[gp_index] += second_byte;
-        };
-
-        // Set index
-        if (nibbles[0] == 0xA) {
-            I = last_nibbles;
-        };
-
-        // Display
-        if (nibbles[0] == 0xD) {
-            uint16_t sprite_height = nibbles[3];
-
-            uint16_t start_x = gp_registers[nibbles[1]] % 64;
-            uint16_t start_y = gp_registers[nibbles[2]] % 32;
-
-            bool collision_detected = false;
-
-            int y;
-            for (y = 0; y < sprite_height; y++) {
-                uint8_t sprite_row = chip8ram[I + y];
-                
-                int x;
-                for (x = 0; x < 8; x++) {
-                    uint8_t curr_x = (start_x + x);
-                    uint8_t curr_y = (start_y + y);
-
-                    if (curr_x >= 64) {
-                        continue;
-                    }
-
-                    if (curr_y >= 32) {
-                        continue;
-                    }
-
-                    uint8_t curr_val = display[curr_y][curr_x];
-
-                    display[curr_y][curr_x] = display[curr_y][curr_x] ^ ((sprite_row >> (7 - x)) & 0x1);
-
-                    uint8_t new_val = display[curr_y][curr_x];
-
-                    if (curr_val == 1 && new_val == 0) {
-                        collision_detected = true;
-                    }
-                }
-            };
-
-            if (collision_detected) {
-                gp_registers[0xF] = 1;
-            } else {
-                gp_registers[0xF] = 0;
-            };
-        };
-
-        // Timers, Add to Index, Font
-        if (nibbles[0] == 0xF) {
-            uint8_t *reg = &gp_registers[nibbles[1]];
-
-            if (second_byte == 0x07) {
-                *reg = delay_timer;
-            } else if (second_byte == 0x15) {
-                delay_timer = *reg;
-            } else if (second_byte == 0x18) {
-                sound_timer = *reg;
-            } else if (second_byte == 0x1E) {
-                // Add to index
-                I += *reg;
-
-                if (I > 0xFFF) {
-                    gp_registers[0xF] = 1;
-                } else {
-                    gp_registers[0xF] = 0;
-                }
-            } else if (second_byte == 0x33) {
-                uint8_t digits[3];
-                
-                uint8_t val = *reg;
-                int i;
-                for (i = 0; i < 3; i++) {
-                    digits[2 - i] = val % 10;
-                    val = val / 10;
-                };
-                // Place digits in spots
-                int j;
-                for (j = 0; j < 3; j++) {
-                    chip8ram[I + j] = digits[j];
-                };
-            } else if (second_byte == 0x33) {
-                uint8_t digits[3];
-                
-                uint8_t val = *reg;
-                int i;
-                for (i = 0; i < 3; i++) {
-                    uint8_t curr_digit = val % 10;
-                    digits[3 - i] = curr_digit;
-                    val = (val - curr_digit) / 10;
-                };
-                // Place digits in spots
-                int j;
-                for (j = 0; j < 3; j++) {
-                    chip8ram[I + j] = digits[j];
-                };
-            } else if (second_byte == 55) {
-                int i;
-                for (i = 0; i <= nibbles[1]; i++) {
-                    uint8_t curr_gp = gp_registers[i];
-
-                    chip8ram[I + i] = curr_gp;
-                };
-            } else if (second_byte == 0x65) {
-                int i;
-                for (i = 0; i <= nibbles[1]; i++) {
-                    uint8_t curr_val = chip8ram[I + i];
-
-                    gp_registers[i] = curr_val;
-                };
-            } else if (second_byte == 0x29) {
-                I = 0x050 + 5 * (*reg & 0xF);
-            } else if (second_byte == 0x0A) {
-                // Wait for key press
-                bool key_pressed = false;
-                for (int i = 0; i < 16; i++) {
-                    if (keypad[i] == 1) {
-                        *reg = i;
-                        key_pressed = true;
+        // Execute instruction
+        switch (nibbles[0]) {
+            case 0x0:
+                // Clear screen and return from subroutine
+                switch (second_byte) {
+                    case 0xE0:
+                        // Clear screen
+                        memset(display, 0, sizeof(display));
                         break;
-                    };
-                };
-                // If no key pressed, repeat this instruction
-                if (!key_pressed) {
-                    pc -= 2;
-                };
-            };
-        };
-
-        // Call subroutine
-        if (nibbles[0] == 2) {
-            stack[sp] = pc;
-            sp++;
-            pc = last_nibbles;
-        };
-
-        // Skip conditionally
-        if (nibbles[0] == 3) {
-            if (gp_registers[nibbles[1]] == second_byte) {
-                pc += 2;
-            };
-        };
-
-        if (nibbles[0] == 4) {
-            if (gp_registers[nibbles[1]] != second_byte) {
-                pc += 2;
-            };
-        };
-
-        if (nibbles[0] == 5 && nibbles[3] == 0) {
-            if (gp_registers[nibbles[1]] == gp_registers[nibbles[2]]) {
-                pc += 2;
-            };
-        };
-
-        if (nibbles[0] == 9 && nibbles[3] == 0) {
-            if (gp_registers[nibbles[1]] != gp_registers[nibbles[2]]) {
-                pc += 2;
-            };
-        };
-        
-        // Arithmetic
-        if (nibbles[0] == 8) {
-            uint8_t last_nibble = nibbles[3];
-
-            uint8_t x = nibbles[1];
-            uint8_t y = nibbles[2];
-
-            // Set
-            switch (last_nibble) {
-                case 0:
-                    gp_registers[x] = gp_registers[y];
-                    break;
-                case 1:
-                    gp_registers[x] = gp_registers[x] | gp_registers[y];
-                    break;
-                case 2:
-                    gp_registers[x] = gp_registers[x] & gp_registers[y];
-                    break;
-                case 3:
-                    gp_registers[x] = gp_registers[x] ^ gp_registers[y];
-                    break;
-                case 4: {
-                    uint16_t result = gp_registers[x] + gp_registers[y];
-                    if (result > 255) {
-                        gp_registers[0xF] = 1;
-                    } else {
-                        gp_registers[0xF] = 0;
-                    }
-                    gp_registers[x] = result;
-                    break;
+                    case 0xEE:
+                        // Return from subroutine
+                        sp--;
+                        pc = stack[sp];
+                        break;
                 }
-                case 5:
-                    if (gp_registers[x] >= gp_registers[y]) {
-                        gp_registers[0xF] = 1;
-                    } else {
-                        gp_registers[0xF] = 0;
-                    }
+                break;
 
-                    gp_registers[x] = gp_registers[x] - gp_registers[y];
-                    break;
-                case 7:
-                    if (gp_registers[y] >= gp_registers[x]) {
-                        gp_registers[0xF] = 1;
-                    } else {
-                        gp_registers[0xF] = 0;
-                    }
+            case 0x1:
+                // Jump to address NNN
+                pc = last_nibbles;
+                break;
 
-                    gp_registers[x] = gp_registers[y] - gp_registers[x];
-                    break;                    
-                case 6: {
-                    uint8_t last_bit_right = gp_registers[x] & 0x1;
+            case 0x2:
+                // Call subroutine at NNN
+                stack[sp] = pc;
+                sp++;
+                pc = last_nibbles;
+                break;
 
-                    gp_registers[x] = gp_registers[x] >> 1;
-
-                    gp_registers[0xF] = last_bit_right;
-                    break;
+            case 0x3:
+                // Skip next instruction if VX == NN
+                if (gp_registers[nibbles[1]] == second_byte) {
+                    pc += 2;
                 }
-                case 0xE: {
-                    uint8_t last_bit_left = gp_registers[x] >> 7;
+                break;
 
-                    gp_registers[x] = gp_registers[x] << 1;
-                    
-                    gp_registers[0xF] = last_bit_left;
-                    break;                
+            case 0x4:
+                // Skip next instruction if VX != NN
+                if (gp_registers[nibbles[1]] != second_byte) {
+                    pc += 2;
                 }
+                break;
+
+            case 0x5:
+                // Skip next instruction if VX == VY
+                if (nibbles[3] == 0) {
+                    if (gp_registers[nibbles[1]] == gp_registers[nibbles[2]]) {
+                        pc += 2;
+                    }
+                }
+                break;
+
+            case 0x6:
+                // Set VX to NN
+                gp_registers[nibbles[1]] = second_byte;
+                break;
+
+            case 0x7:
+                // Add NN to VX
+                gp_registers[nibbles[1]] += second_byte;
+                break;
+
+            case 0x8: {
+                // Arithmetic and logic operations
+                uint8_t x = nibbles[1];
+                uint8_t y = nibbles[2];
+
+                switch (nibbles[3]) {
+                    case 0x0:
+                        // Set VX to VY
+                        gp_registers[x] = gp_registers[y];
+                        break;
+                    case 0x1:
+                        // Set VX to VX OR VY
+                        gp_registers[x] = gp_registers[x] | gp_registers[y];
+                        break;
+                    case 0x2:
+                        // Set VX to VX AND VY
+                        gp_registers[x] = gp_registers[x] & gp_registers[y];
+                        break;
+                    case 0x3:
+                        // Set VX to VX XOR VY
+                        gp_registers[x] = gp_registers[x] ^ gp_registers[y];
+                        break;
+                    case 0x4: {
+                        // Add VY to VX, set VF to carry
+                        uint16_t result = gp_registers[x] + gp_registers[y];
+                        gp_registers[0xF] = (result > 255) ? 1 : 0;
+                        gp_registers[x] = result;
+                        break;
+                    }
+                    case 0x5:
+                        // Subtract VY from VX, set VF to NOT borrow
+                        gp_registers[0xF] = (gp_registers[x] >= gp_registers[y]) ? 1 : 0;
+                        gp_registers[x] = gp_registers[x] - gp_registers[y];
+                        break;
+                    case 0x6: {
+                        // Shift VX right by 1, set VF to LSB before shift
+                        uint8_t last_bit_right = gp_registers[x] & 0x1;
+                        gp_registers[x] = gp_registers[x] >> 1;
+                        gp_registers[0xF] = last_bit_right;
+                        break;
+                    }
+                    case 0x7:
+                        // Set VX to VY - VX, set VF to NOT borrow
+                        gp_registers[0xF] = (gp_registers[y] >= gp_registers[x]) ? 1 : 0;
+                        gp_registers[x] = gp_registers[y] - gp_registers[x];
+                        break;
+                    case 0xE: {
+                        // Shift VX left by 1, set VF to MSB before shift
+                        uint8_t last_bit_left = gp_registers[x] >> 7;
+                        gp_registers[x] = gp_registers[x] << 1;
+                        gp_registers[0xF] = last_bit_left;
+                        break;
+                    }
+                }
+                break;
             }
-        };
-        
-        // Jump with offset
-        if (nibbles[0] == 0xB) {
-            pc = last_nibbles + gp_registers[0];
-        };
 
-        // Random
-        if (nibbles[0] == 0xC) {
-            uint8_t random_number = rand();
-            gp_registers[nibbles[1]] = random_number & second_byte;
-        };
+            case 0x9:
+                // Skip next instruction if VX != VY
+                if (nibbles[3] == 0) {
+                    if (gp_registers[nibbles[1]] != gp_registers[nibbles[2]]) {
+                        pc += 2;
+                    }
+                }
+                break;
 
-        // Skip if key
-        if (nibbles[0] == 0xE) {
-            uint8_t x = gp_registers[nibbles[1]];
-            if (second_byte == 0x9E) {
-                if (keypad[x] == 1) {
-                    pc += 2;
-                };
-            } else if (second_byte == 0xA1) {
-                if (keypad[x] == 0) {
-                    pc += 2;
-                };
-            };
-        };
+            case 0xA:
+                // Set index register I to NNN
+                I = last_nibbles;
+                break;
+
+            case 0xB:
+                // Jump to address NNN + V0
+                pc = last_nibbles + gp_registers[0];
+                break;
+
+            case 0xC:
+                // Set VX to random byte AND NN
+                gp_registers[nibbles[1]] = rand() & second_byte;
+                break;
+
+            case 0xD: {
+                // Draw sprite at (VX, VY) with height N
+                uint16_t sprite_height = nibbles[3];
+                uint16_t start_x = gp_registers[nibbles[1]] % 64;
+                uint16_t start_y = gp_registers[nibbles[2]] % 32;
+                bool collision_detected = false;
+
+                for (int y = 0; y < sprite_height; y++) {
+                    uint8_t sprite_row = chip8ram[I + y];
+                    
+                    for (int x = 0; x < 8; x++) {
+                        uint8_t curr_x = start_x + x;
+                        uint8_t curr_y = start_y + y;
+
+                        if (curr_x >= 64 || curr_y >= 32) {
+                            continue;
+                        }
+
+                        uint8_t curr_val = display[curr_y][curr_x];
+                        display[curr_y][curr_x] ^= ((sprite_row >> (7 - x)) & 0x1);
+
+                        if (curr_val == 1 && display[curr_y][curr_x] == 0) {
+                            collision_detected = true;
+                        }
+                    }
+                }
+
+                gp_registers[0xF] = collision_detected ? 1 : 0;
+                break;
+            }
+
+            case 0xE: {
+                // Skip based on key press
+                uint8_t key = gp_registers[nibbles[1]];
+                
+                if (second_byte == 0x9E) {
+                    // Skip if key VX is pressed
+                    if (keypad[key] == 1) {
+                        pc += 2;
+                    }
+                } else if (second_byte == 0xA1) {
+                    // Skip if key VX is not pressed
+                    if (keypad[key] == 0) {
+                        pc += 2;
+                    }
+                }
+                break;
+            }
+
+            case 0xF: {
+                // Timer, memory, and font operations
+                uint8_t x = nibbles[1];
+                
+                switch (second_byte) {
+                    case 0x07:
+                        // Set VX to delay timer
+                        gp_registers[x] = delay_timer;
+                        break;
+                        
+                    case 0x0A: {
+                        // Wait for key press and store in VX
+                        bool key_pressed = false;
+                        for (int i = 0; i < 16; i++) {
+                            if (keypad[i] == 1) {
+                                gp_registers[x] = i;
+                                key_pressed = true;
+                                break;
+                            }
+                        }
+                        if (!key_pressed) {
+                            pc -= 2;
+                        }
+                        break;
+                    }
+                        
+                    case 0x15:
+                        // Set delay timer to VX
+                        delay_timer = gp_registers[x];
+                        break;
+                        
+                    case 0x18:
+                        // Set sound timer to VX
+                        sound_timer = gp_registers[x];
+                        break;
+                        
+                    case 0x1E:
+                        // Add VX to I
+                        I += gp_registers[x];
+                        gp_registers[0xF] = (I > 0xFFF) ? 1 : 0;
+                        break;
+                        
+                    case 0x29:
+                        // Set I to location of sprite for digit VX
+                        I = 0x050 + 5 * (gp_registers[x] & 0xF);
+                        break;
+                        
+                    case 0x33: {
+                        // Store BCD representation of VX in memory at I, I+1, I+2
+                        uint8_t val = gp_registers[x];
+                        chip8ram[I]     = val / 100;
+                        chip8ram[I + 1] = (val / 10) % 10;
+                        chip8ram[I + 2] = val % 10;
+                        break;
+                    }
+                        
+                    case 0x55:
+                        // Store V0 to VX in memory starting at I
+                        for (int i = 0; i <= x; i++) {
+                            chip8ram[I + i] = gp_registers[i];
+                        }
+                        break;
+                        
+                    case 0x65:
+                        // Load V0 to VX from memory starting at I
+                        for (int i = 0; i <= x; i++) {
+                            gp_registers[i] = chip8ram[I + i];
+                        }
+                        break;
+                }
+                break;
+            }
+        }
 
         render_display();
         SDL_Delay(8);
 
         uint32_t current_time = SDL_GetTicks();
-        if(current_time - last_timer_update >= 16) {  // ~60Hz (1000ms/60 ≈ 16ms)
+        if(current_time - last_timer_update >= 16) {
             if(delay_timer > 0) delay_timer--;
             if(sound_timer > 0) sound_timer--;
             last_timer_update = current_time;
         }
-    };
+    }
 }
 
 bool sdl_init() {
@@ -591,4 +567,4 @@ int main(int argc, char *argv[]) {
     
     sdl_close();
     return 0;
-}
+}IOPOL_ATIME_UPDATES_DEFAULT
