@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// CHIP-8 system constants
 #define MEMORY_SIZE 4096
 #define REGISTER_COUNT 16
 #define STACK_SIZE 16
@@ -11,6 +12,8 @@
 #define DISPLAY_HEIGHT 32
 #define KEYPAD_SIZE 16
 #define PROGRAM_START 0x200
+#define FONT_START_ADDRESS 0x050
+#define FONT_SPRITE_SIZE 5
 
 typedef struct {
     uint8_t memory[MEMORY_SIZE];

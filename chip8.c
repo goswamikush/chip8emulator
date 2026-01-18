@@ -26,56 +26,34 @@ static const uint8_t font[80] = {
 
 void chip8_init(Chip8 *chip8) {
     memset(chip8->memory, 0, sizeof(chip8->memory));
-
-    // General purpose registers
     memset(chip8->V, 0, sizeof(chip8->V));
-
-    // Special purpose registers
-    chip8->delay_timer = 0;
-    chip8->sound_timer = 0;
-
-    // Pseudo-registers
-    chip8->pc = 0x200;
-    chip8->sp = 0;
-
-    // Stack
     memset(chip8->stack, 0, sizeof(chip8->stack));
-
-    // I register
-    chip8->I = 0;
-
-    // Display
     memset(chip8->display, 0, sizeof(chip8->display));
-
-    // Keypad
     memset(chip8->keypad, 0, sizeof(chip8->keypad));
 
-    // Font
-    int i ;
-    for (i = 0; i < 80; i++) {
-        chip8->memory[i + 0x050] = font[i];
-    };
+    chip8->delay_timer = 0;
+    chip8->sound_timer = 0;
+    chip8->pc = PROGRAM_START;
+    chip8->sp = 0;
+    chip8->I = 0;
+
+    // Load font into memory
+    memcpy(chip8->memory + FONT_START_ADDRESS, font, 80);
 }
 
 bool chip8_load_rom(Chip8 *chip8, const char *filepath) {
-    FILE *fptr;
-
-    fptr = fopen(filepath, "rb");
+    FILE *fptr = fopen(filepath, "rb");
 
     if (fptr == NULL) {
         printf("Error opening file. Exiting program.\n");
         return false;
-    };
+    }
 
-    // Get file size
     fseek(fptr, 0, SEEK_END);
-
     long file_size = ftell(fptr);
-
     fseek(fptr, 0, SEEK_SET);
 
-    size_t bytes_read = fread(chip8->memory + 0x200, 1, file_size, fptr);
-
+    size_t bytes_read = fread(chip8->memory + PROGRAM_START, 1, file_size, fptr);
     fclose(fptr);
 
     return true;
@@ -254,8 +232,8 @@ void chip8_execute_cycle(Chip8 *chip8) {
         case 0xD: {
             // Draw sprite at (VX, VY) with height N
             uint16_t sprite_height = nibbles[3];
-            uint16_t start_x = chip8->V[nibbles[1]] % 64;
-            uint16_t start_y = chip8->V[nibbles[2]] % 32;
+            uint16_t start_x = chip8->V[nibbles[1]] % DISPLAY_WIDTH;
+            uint16_t start_y = chip8->V[nibbles[2]] % DISPLAY_HEIGHT;
             bool collision_detected = false;
 
             for (int y = 0; y < sprite_height; y++) {
@@ -265,7 +243,7 @@ void chip8_execute_cycle(Chip8 *chip8) {
                     uint8_t curr_x = start_x + x;
                     uint8_t curr_y = start_y + y;
 
-                    if (curr_x >= 64 || curr_y >= 32) {
+                    if (curr_x >= DISPLAY_WIDTH || curr_y >= DISPLAY_HEIGHT) {
                         continue;
                     }
 
@@ -344,7 +322,7 @@ void chip8_execute_cycle(Chip8 *chip8) {
                     
                 case 0x29:
                     // Set I to location of sprite for digit VX
-                    chip8->I = 0x050 + 5 * (chip8->V[x] & 0xF);
+                    chip8->I = FONT_START_ADDRESS + FONT_SPRITE_SIZE * (chip8->V[x] & 0xF);
                     break;
                     
                 case 0x33: {

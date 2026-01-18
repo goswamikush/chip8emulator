@@ -15,15 +15,59 @@ SDL_Renderer* gRenderer = NULL;
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 320;
+const int PIXEL_SCALE = 10;
 
 // SDL functions
 void render_display(Chip8 *chip8);  
 bool sdl_init();        
 void sdl_close();
+void handle_input(Chip8 *chip8, SDL_Event *e);
+
+void handle_input(Chip8 *chip8, SDL_Event *e) {
+    if(e->type == SDL_KEYDOWN) {
+        switch(e->key.keysym.sym) {
+            case SDLK_1: chip8->keypad[0x1] = 1; break;
+            case SDLK_2: chip8->keypad[0x2] = 1; break;
+            case SDLK_3: chip8->keypad[0x3] = 1; break;
+            case SDLK_4: chip8->keypad[0xC] = 1; break;
+            case SDLK_q: chip8->keypad[0x4] = 1; break;
+            case SDLK_w: chip8->keypad[0x5] = 1; break;
+            case SDLK_e: chip8->keypad[0x6] = 1; break;
+            case SDLK_r: chip8->keypad[0xD] = 1; break;
+            case SDLK_a: chip8->keypad[0x7] = 1; break;
+            case SDLK_s: chip8->keypad[0x8] = 1; break;
+            case SDLK_d: chip8->keypad[0x9] = 1; break;
+            case SDLK_f: chip8->keypad[0xE] = 1; break;
+            case SDLK_z: chip8->keypad[0xA] = 1; break;
+            case SDLK_x: chip8->keypad[0x0] = 1; break;
+            case SDLK_c: chip8->keypad[0xB] = 1; break;
+            case SDLK_v: chip8->keypad[0xF] = 1; break;
+        }
+    }
+    else if(e->type == SDL_KEYUP) {
+        switch(e->key.keysym.sym) {
+            case SDLK_1: chip8->keypad[0x1] = 0; break;
+            case SDLK_2: chip8->keypad[0x2] = 0; break;
+            case SDLK_3: chip8->keypad[0x3] = 0; break;
+            case SDLK_4: chip8->keypad[0xC] = 0; break;
+            case SDLK_q: chip8->keypad[0x4] = 0; break;
+            case SDLK_w: chip8->keypad[0x5] = 0; break;
+            case SDLK_e: chip8->keypad[0x6] = 0; break;
+            case SDLK_r: chip8->keypad[0xD] = 0; break;
+            case SDLK_a: chip8->keypad[0x7] = 0; break;
+            case SDLK_s: chip8->keypad[0x8] = 0; break;
+            case SDLK_d: chip8->keypad[0x9] = 0; break;
+            case SDLK_f: chip8->keypad[0xE] = 0; break;
+            case SDLK_z: chip8->keypad[0xA] = 0; break;
+            case SDLK_x: chip8->keypad[0x0] = 0; break;
+            case SDLK_c: chip8->keypad[0xB] = 0; break;
+            case SDLK_v: chip8->keypad[0xF] = 0; break;
+        }
+    }
+}
 
 void loop(Chip8 *chip8) {
     bool is_running = true;
-    int count = 0;
     SDL_Event e;
 
     uint32_t last_timer_update = SDL_GetTicks();
@@ -32,46 +76,8 @@ void loop(Chip8 *chip8) {
         while(SDL_PollEvent(&e)) {
             if(e.type == SDL_QUIT) {
                 is_running = false;
-            } 
-            else if(e.type == SDL_KEYDOWN) {
-                switch(e.key.keysym.sym) {
-                    case SDLK_1: chip8->keypad[0x1] = 1; break;
-                    case SDLK_2: chip8->keypad[0x2] = 1; break;
-                    case SDLK_3: chip8->keypad[0x3] = 1; break;
-                    case SDLK_4: chip8->keypad[0xC] = 1; break;
-                    case SDLK_q: chip8->keypad[0x4] = 1; break;
-                    case SDLK_w: chip8->keypad[0x5] = 1; break;
-                    case SDLK_e: chip8->keypad[0x6] = 1; break;
-                    case SDLK_r: chip8->keypad[0xD] = 1; break;
-                    case SDLK_a: chip8->keypad[0x7] = 1; break;
-                    case SDLK_s: chip8->keypad[0x8] = 1; break;
-                    case SDLK_d: chip8->keypad[0x9] = 1; break;
-                    case SDLK_f: chip8->keypad[0xE] = 1; break;
-                    case SDLK_z: chip8->keypad[0xA] = 1; break;
-                    case SDLK_x: chip8->keypad[0x0] = 1; break;
-                    case SDLK_c: chip8->keypad[0xB] = 1; break;
-                    case SDLK_v: chip8->keypad[0xF] = 1; break;
-                }
-            }
-            else if(e.type == SDL_KEYUP) {
-                switch(e.key.keysym.sym) {
-                    case SDLK_1: chip8->keypad[0x1] = 0; break;
-                    case SDLK_2: chip8->keypad[0x2] = 0; break;
-                    case SDLK_3: chip8->keypad[0x3] = 0; break;
-                    case SDLK_4: chip8->keypad[0xC] = 0; break;
-                    case SDLK_q: chip8->keypad[0x4] = 0; break;
-                    case SDLK_w: chip8->keypad[0x5] = 0; break;
-                    case SDLK_e: chip8->keypad[0x6] = 0; break;
-                    case SDLK_r: chip8->keypad[0xD] = 0; break;
-                    case SDLK_a: chip8->keypad[0x7] = 0; break;
-                    case SDLK_s: chip8->keypad[0x8] = 0; break;
-                    case SDLK_d: chip8->keypad[0x9] = 0; break;
-                    case SDLK_f: chip8->keypad[0xE] = 0; break;
-                    case SDLK_z: chip8->keypad[0xA] = 0; break;
-                    case SDLK_x: chip8->keypad[0x0] = 0; break;
-                    case SDLK_c: chip8->keypad[0xB] = 0; break;
-                    case SDLK_v: chip8->keypad[0xF] = 0; break;
-                }
+            } else {
+                handle_input(chip8, &e);
             }
         }
 
@@ -128,15 +134,14 @@ void render_display(Chip8 *chip8) {
     SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
 
     // Draw each pixel
-    for (int y = 0; y < 32; y++) {
-        for (int x = 0; x < 64; x++) {
+    for (int y = 0; y < DISPLAY_HEIGHT; y++) {
+        for (int x = 0; x < DISPLAY_WIDTH; x++) {
             if (chip8->display[y][x] == 1) {
-                // Each CHIP-8 pixel is 10x10 screen pixels
                 SDL_Rect pixel = {
-                    x * 10,  // x position
-                    y * 10,  // y position
-                    10,      // width
-                    10       // height
+                    x * PIXEL_SCALE,
+                    y * PIXEL_SCALE,
+                    PIXEL_SCALE,
+                    PIXEL_SCALE
                 };
                 SDL_RenderFillRect(gRenderer, &pixel);
             }
